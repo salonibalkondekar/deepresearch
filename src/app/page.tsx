@@ -40,58 +40,37 @@ export default function Home() {
     }, 2000); // Poll every 2 seconds
 
     return () => clearInterval(pollInterval);
-  }, [currentMission?.id, isProcessing]);
+  }, [currentMission?.id, isProcessing, currentMission]);
 
   const handleStartResearch = async (title: string, description: string) => {
     try {
       setError(null);
+      setIsProcessing(true);
       
-      // Create a mock mission with research steps
-      const mockMission: ResearchMission = {
-        id: Date.now().toString(),
-        title,
-        description,
-        status: 'planning',
-        steps: [
-          {
-            id: '1',
-            title: 'Foundation Research',
-            description: `Research basic information and overview of ${title}`,
-            status: 'pending'
-          },
-          {
-            id: '2',
-            title: 'Detailed Analysis',
-            description: `Conduct detailed analysis of key aspects`,
-            status: 'pending'
-          },
-          {
-            id: '3',
-            title: 'Case Studies',
-            description: `Find relevant case studies and examples`,
-            status: 'pending'
-          },
-          {
-            id: '4',
-            title: 'Expert Insights',
-            description: `Search for expert opinions and insights`,
-            status: 'pending'
-          },
-          {
-            id: '5',
-            title: 'Current Status',
-            description: `Research current trends and developments`,
-            status: 'pending'
-          }
-        ],
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
+      // Create mission and generate dynamic steps via API
+      const response = await fetch('/api/research/plan', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          title, 
+          description 
+        }),
+      });
 
-      setCurrentMission(mockMission);
+      const data = await response.json();
+
+      if (data.success) {
+        setCurrentMission(data.mission);
+      } else {
+        throw new Error(data.error || 'Failed to create research plan');
+      }
     } catch (error) {
       console.error('Failed to create research plan:', error);
       setError(error instanceof Error ? error.message : 'Failed to create research plan');
+    } finally {
+      setIsProcessing(false);
     }
   };
 

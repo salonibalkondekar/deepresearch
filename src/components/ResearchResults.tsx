@@ -1,6 +1,6 @@
 'use client';
 
-import { ResearchMission, SearchResult } from '@/lib/types';
+import { ResearchMission, ResearchResults as ResearchResultsType } from '@/lib/types';
 import { useState, useEffect } from 'react';
 
 interface ResearchResultsProps {
@@ -15,7 +15,7 @@ export default function ResearchResults({ mission, onStartNew }: ResearchResults
 
   // Poll for comprehensive analysis completion
   useEffect(() => {
-    const isGeneratingAnalysis = (mission.results as any)?.isGeneratingComprehensiveAnalysis;
+    const isGeneratingAnalysis = (mission.results as ResearchResultsType)?.isGeneratingComprehensiveAnalysis;
     
     if (isGeneratingAnalysis) {
       const pollInterval = setInterval(async () => {
@@ -25,7 +25,7 @@ export default function ResearchResults({ mission, onStartNew }: ResearchResults
           const data = await response.json();
           
           if (data.success && data.mission.results) {
-            const stillGenerating = (data.mission.results as any)?.isGeneratingComprehensiveAnalysis;
+            const stillGenerating = (data.mission.results as ResearchResultsType)?.isGeneratingComprehensiveAnalysis;
             if (!stillGenerating) {
               // Comprehensive analysis is ready, trigger a refresh
               window.location.reload();
@@ -159,7 +159,7 @@ export default function ResearchResults({ mission, onStartNew }: ResearchResults
             ].map(tab => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setActiveTab(tab.id as 'summary' | 'findings' | 'sources')}
                 className={`py-4 text-sm font-medium border-b-2 transition-colors ${
                   activeTab === tab.id
                     ? 'border-blue-500 text-blue-600'
@@ -180,7 +180,7 @@ export default function ResearchResults({ mission, onStartNew }: ResearchResults
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-xl font-semibold text-gray-900">Comprehensive Research Analysis</h2>
-                  {((results as any)?.isGeneratingComprehensiveAnalysis || isRefreshing) && (
+                  {((results as ResearchResultsType)?.isGeneratingComprehensiveAnalysis || isRefreshing) && (
                     <div className="flex items-center text-sm text-blue-600">
                       <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

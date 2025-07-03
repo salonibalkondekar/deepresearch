@@ -58,7 +58,7 @@ export class ResearchAgent {
       mission.updatedAt = new Date();
 
       // Plan the research steps
-      mission.steps = researchPipeline.planResearchSteps(mission.description);
+      mission.steps = await researchPipeline.planResearchSteps(mission.description);
       
       // Notify planning complete
       if (onProgress) {

@@ -11,7 +11,7 @@ interface ResearchPlanProps {
 
 export default function ResearchPlan({ mission, onExecute, onStartNew, isExecuting }: ResearchPlanProps) {
   const getPriorityColor = (priority: string) => {
-    switch (priority) {
+    switch (priority?.toUpperCase()) {
       case 'HIGH':
         return 'bg-red-100 text-red-800';
       case 'MEDIUM':
@@ -23,15 +23,28 @@ export default function ResearchPlan({ mission, onExecute, onStartNew, isExecuti
     }
   };
 
-  const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'numeric',
-      day: 'numeric',
-      year: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    }).format(date);
+  const formatDate = (date: Date | string) => {
+    try {
+      // Convert string to Date if needed
+      const dateObj = date instanceof Date ? date : new Date(date);
+      
+      // Check if date is valid
+      if (isNaN(dateObj.getTime())) {
+        return 'Invalid date';
+      }
+      
+      return new Intl.DateTimeFormat('en-US', {
+        month: 'numeric',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      }).format(dateObj);
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Date formatting error';
+    }
   };
 
   return (
@@ -63,10 +76,10 @@ export default function ResearchPlan({ mission, onExecute, onStartNew, isExecuti
                   <h3 className="text-lg font-semibold text-gray-900">{step.title}</h3>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor('MEDIUM')}`}>
-                    MEDIUM
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(step.priority || 'medium')}`}>
+                    {(step.priority || 'medium').toUpperCase()}
                   </span>
-                  <span className="text-sm text-gray-500">2 days</span>
+                  <span className="text-sm text-gray-500">{step.estimatedDuration || 'Variable'}</span>
                 </div>
               </div>
               

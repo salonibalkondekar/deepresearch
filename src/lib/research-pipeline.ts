@@ -9,59 +9,52 @@ export class ResearchPipeline {
   }
 
   /**
-   * Break down a research mission into logical steps
+   * Break down a research mission into logical steps using LLM
    */
-  planResearchSteps(mission: string): ResearchStep[] {
-    const steps: ResearchStep[] = [];
-    
-    // Analyze the mission and create appropriate steps
-    const missionLower = mission.toLowerCase();
-    
-    // Common research patterns
-    if (missionLower.includes('compare') || missionLower.includes('vs')) {
-      steps.push(
-        this.createStep('Background Research', `Research background information about ${mission}`),
-        this.createStep('Comparative Analysis', `Compare different aspects and options related to ${mission}`),
-        this.createStep('Pros and Cons', `Analyze advantages and disadvantages of each option`),
-        this.createStep('Expert Opinions', `Find expert opinions and reviews about ${mission}`),
-        this.createStep('Current Trends', `Research current trends and latest developments`)
-      );
-    } else if (missionLower.includes('market') || missionLower.includes('industry')) {
-      steps.push(
-        this.createStep('Market Overview', `Research market overview for ${mission}`),
-        this.createStep('Key Players', `Identify key players and competitors`),
-        this.createStep('Market Size & Trends', `Analyze market size, growth, and trends`),
-        this.createStep('Challenges & Opportunities', `Research current challenges and opportunities`),
-        this.createStep('Future Outlook', `Analyze future predictions and forecasts`)
-      );
-    } else if (missionLower.includes('technology') || missionLower.includes('tech')) {
-      steps.push(
-        this.createStep('Technology Overview', `Research the fundamentals of ${mission}`),
-        this.createStep('Current Applications', `Find current real-world applications and use cases`),
-        this.createStep('Technical Specifications', `Research technical details and specifications`),
-        this.createStep('Adoption & Implementation', `Research adoption rates and implementation challenges`),
-        this.createStep('Future Developments', `Research future developments and roadmap`)
-      );
-    } else {
-      // Generic research steps
-      steps.push(
-        this.createStep('Foundation Research', `Research basic information and overview of ${mission}`),
-        this.createStep('Detailed Analysis', `Conduct detailed analysis of key aspects`),
-        this.createStep('Case Studies', `Find relevant case studies and examples`),
-        this.createStep('Expert Insights', `Gather expert opinions and insights`),
-        this.createStep('Current Status', `Research current status and recent developments`)
-      );
+  async planResearchSteps(mission: string): Promise<ResearchStep[]> {
+    try {
+      // Use LLM to generate dynamic research steps
+      const aiSteps = await this.searchClient.generateResearchSteps(mission);
+      
+      // Convert AI-generated steps to ResearchStep objects
+      const steps = aiSteps.map(aiStep => this.createStep(
+        aiStep.title, 
+        aiStep.description, 
+        aiStep.priority, 
+        aiStep.estimatedDuration
+      ));
+      
+      return steps;
+    } catch (error) {
+      console.error('Error generating dynamic research steps:', error);
+      console.error('Falling back to predefined steps for mission:', mission);
+      
+      // Fallback to basic steps if LLM fails
+      return this.createFallbackSteps(mission);
     }
-
-    return steps.slice(0, 7); // Limit to maximum 7 steps
   }
 
-  private createStep(title: string, description: string): ResearchStep {
+  /**
+   * Fallback method for creating basic steps when LLM fails
+   */
+  private createFallbackSteps(mission: string): ResearchStep[] {
+    return [
+      this.createStep('Foundation Research', `Research basic information and overview of ${mission}`, 'high', '1-2 hours'),
+      this.createStep('Detailed Analysis', `Conduct detailed analysis of key aspects`, 'high', '2-3 hours'),
+      this.createStep('Current Status', `Research current status and recent developments`, 'medium', '1 hour'),
+      this.createStep('Expert Insights', `Gather expert opinions and insights`, 'medium', '1-2 hours'),
+      this.createStep('Summary & Validation', `Validate findings and create summary`, 'high', '30 minutes')
+    ];
+  }
+
+  private createStep(title: string, description: string, priority?: 'high' | 'medium' | 'low', estimatedDuration?: string): ResearchStep {
     return {
       id: this.generateId(),
       title,
       description,
       status: 'pending',
+      priority,
+      estimatedDuration,
     };
   }
 
@@ -202,41 +195,6 @@ export class ResearchPipeline {
     };
   }
 
-  /**
-   * Generate comprehensive final results (kept for backward compatibility)
-   */
-  private async generateFinalResults(mission: ResearchMission): Promise<ResearchResults> {
-    const allResults: SearchResult[] = [];
-    const completedSteps = mission.steps.filter(step => step.status === 'completed').length;
-
-    // Collect all search results
-    mission.steps.forEach(step => {
-      if (step.results) {
-        allResults.push(...step.results);
-      }
-    });
-
-    // Remove duplicates based on URL
-    const uniqueResults = this.removeDuplicateResults(allResults);
-
-    // Generate key findings
-    const keyFindings = this.extractKeyFindings(mission.steps);
-
-    // Generate summary
-    const summary = await this.generateSummary(mission, keyFindings);
-
-    // Generate recommendations
-    const recommendations = this.generateRecommendations(mission.steps);
-
-    return {
-      summary,
-      keyFindings,
-      sources: uniqueResults.slice(0, 20), // Limit sources
-      recommendations,
-      completedSteps,
-      totalSteps: mission.steps.length,
-    };
-  }
 
   /**
    * Remove duplicate search results
@@ -452,7 +410,7 @@ Do not include a sources section as this will be handled separately.`;
       // Update the mission with the comprehensive summary
       if (mission.results) {
         mission.results.summary = comprehensiveSummary;
-        (mission.results as any).isGeneratingComprehensiveAnalysis = false;
+        (mission.results as ResearchResults).isGeneratingComprehensiveAnalysis = false;
         mission.updatedAt = new Date();
       }
       
@@ -470,7 +428,7 @@ Do not include a sources section as this will be handled separately.`;
           '🔄 Generating comprehensive analysis...', 
           '⚠️ Comprehensive analysis failed to generate. Using basic summary.'
         );
-        (mission.results as any).isGeneratingComprehensiveAnalysis = false;
+        (mission.results as ResearchResults).isGeneratingComprehensiveAnalysis = false;
       }
     }
   }

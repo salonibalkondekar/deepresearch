@@ -62,7 +62,15 @@ Format your response in a structured way with clear sections.`,
       // Extract sources from annotations
       const sources: SearchResult[] = annotations
         .filter(annotation => annotation.type === 'url_citation')
-        .map((annotation: any, index) => ({
+        .map((annotation: {
+          type: string;
+          url_citation?: {
+            title?: string;
+            url?: string;
+            start_index?: number;
+            end_index?: number;
+          };
+        }, index) => ({
           title: annotation.url_citation?.title || `Source ${index + 1}`,
           url: annotation.url_citation?.url || '',
           content: content.substring(
@@ -154,6 +162,101 @@ Format your response in a structured way with clear sections.`,
     } catch (error) {
       console.error('Error generating comprehensive analysis:', error);
       throw new Error('Failed to generate comprehensive analysis');
+    }
+  }
+
+  async generateResearchSteps(researchTopic: string): Promise<Array<{title: string, description: string, priority: 'high' | 'medium' | 'low', estimatedDuration: string}>> {
+    try {
+      const prompt = `You are a research planning expert. Given a research topic, you need to create a dynamic, intelligent research plan with 3-10 steps based on the complexity and nature of the topic.
+
+RESEARCH TOPIC: ${researchTopic}
+
+Please analyze this research topic and create a comprehensive research plan. Consider:
+- The complexity and scope of the topic
+- The type of research needed (market research, technical analysis, comparative study, etc.)
+- The logical flow of information gathering
+- What specific aspects need to be investigated
+
+Return a JSON array of research steps with the following structure:
+[
+  {
+    "title": "Step title (concise, actionable)",
+    "description": "Detailed description of what to research in this step",
+    "priority": "high|medium|low",
+    "estimatedDuration": "estimated time like '1-2 hours', '30 minutes', etc."
+  }
+]
+
+Guidelines:
+- Create 3-10 steps based on topic complexity
+- Each step should build logically on previous steps
+- Steps should be specific and actionable
+- Avoid generic steps like "Research background" - be specific about what aspect to research
+- Consider the audience and purpose of the research
+- Include steps for validation, expert opinions, and current trends when relevant
+- For technical topics, include implementation and adoption aspects
+- For market research, include competitor analysis and market sizing
+- For comparative research, include pros/cons and use cases
+
+Return ONLY the JSON array, no additional text.`;
+
+      const completion = await this.client.chat.completions.create({
+        model: "gpt-4o",
+        messages: [{
+          role: "user",
+          content: prompt
+        }],
+        temperature: 0.3,
+        max_tokens: 2000
+      });
+
+      const response = completion.choices[0]?.message?.content || '';
+      
+      // Clean the response by removing markdown code blocks if present
+      let cleanedResponse = response.trim();
+      
+      // Remove markdown code blocks (```json...``` or ```...```)
+      if (cleanedResponse.startsWith('```')) {
+        // Find the first newline after ```
+        const firstNewline = cleanedResponse.indexOf('\n');
+        // Find the last ``` 
+        const lastBackticks = cleanedResponse.lastIndexOf('```');
+        
+        if (firstNewline !== -1 && lastBackticks !== -1 && lastBackticks > firstNewline) {
+          cleanedResponse = cleanedResponse.substring(firstNewline + 1, lastBackticks).trim();
+        }
+      }
+      
+      try {
+        // Parse the cleaned JSON response
+        const steps = JSON.parse(cleanedResponse);
+        
+        // Validate the structure
+        if (!Array.isArray(steps)) {
+          throw new Error('Response is not an array');
+        }
+        
+        // Validate each step has required fields
+        for (const step of steps) {
+          if (!step.title || !step.description || !step.priority || !step.estimatedDuration) {
+            throw new Error('Step missing required fields');
+          }
+        }
+        
+        return steps;
+      } catch (parseError) {
+        console.error('Error parsing research steps JSON:', parseError);
+        console.error('Raw response:', response);
+        console.error('Cleaned response:', cleanedResponse);
+        throw new Error(`Failed to parse research steps from AI response: ${parseError instanceof Error ? parseError.message : 'Unknown parsing error'}`);
+      }
+    } catch (error) {
+      console.error('Error generating research steps:', error);
+      if (error instanceof Error) {
+        throw new Error(`Failed to generate research steps: ${error.message}`);
+      } else {
+        throw new Error('Failed to generate research steps: Unknown error occurred');
+      }
     }
   }
 }
