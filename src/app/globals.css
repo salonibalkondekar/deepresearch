@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: 'Geist', Arial, Helvetica, sans-serif;
+}
+
+/* Force proper font family and visibility for form elements */
+input, textarea, select {
+  font-family: 'Geist', Arial, Helvetica, sans-serif !important;
+  color: #1f2937 !important; /* gray-900 */
+  background-color: #ffffff !important; /* white */
+}
+
+input::placeholder, textarea::placeholder {
+  color: #6b7280 !important; /* gray-500 */
+  opacity: 1 !important;
+}
+
+/* Ensure focus states are visible */
+input:focus, textarea:focus {
+  outline: none !important;
+  border-color: #3b82f6 !important; /* blue-500 */
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+}
+
+/* Override any monospace inheritance */
+textarea {
+  font-family: 'Geist', Arial, Helvetica, sans-serif !important;
+}
