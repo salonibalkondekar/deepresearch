@@ -31,21 +31,6 @@ export interface SearchResult {
   publishedDate?: string;
 }
 
-export interface TavilySearchResponse {
-  query: string;
-  follow_up_questions?: string[];
-  answer: string;
-  images: string[];
-  results: {
-    title: string;
-    url: string;
-    content: string;
-    score: number;
-    published_date?: string;
-  }[];
-  response_time: number;
-}
-
 export interface OpenAISearchResponse {
   query: string;
   answer: string;
