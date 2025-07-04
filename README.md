@@ -80,7 +80,6 @@ An intelligent research automation platform powered by AI that can analyze any t
 
 - **Research Agent** (`/lib/agent.ts`): Main orchestration logic
 - **Research Pipeline** (`/lib/research-pipeline.ts`): Step planning and execution
-- **Tavily Integration** (`/lib/tavily.ts`): Web search API client
 - **React Components**: Modern UI components for forms, progress tracking, and results
 
 ### API Endpoints
@@ -104,7 +103,6 @@ An intelligent research automation platform powered by AI that can analyze any t
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `TAVILY_API_KEY` | Your Tavily Search API key | Yes |
 | `NEXTAUTH_SECRET` | Secret for NextAuth (if using auth) | No |
 | `NEXTAUTH_URL` | Base URL for your application | No |
 
@@ -161,7 +159,6 @@ src/
 └── lib/                   # Core logic
     ├── agent.ts           # Main agent orchestration
     ├── research-pipeline.ts # Research execution
-    ├── tavily.ts          # Search API integration
     └── types.ts           # TypeScript definitions
 ```
 
@@ -192,7 +189,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- [Tavily](https://tavily.com) for providing the web search API
 - [Next.js](https://nextjs.org) for the excellent React framework
 - [Tailwind CSS](https://tailwindcss.com) for the utility-first CSS framework
 
@@ -201,17 +197,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ### Common Issues
 
 1. **API Key Issues**
-   - Ensure your Tavily API key is correctly set in `.env.local`
-   - Verify the key has sufficient credits/quota
-
 2. **Build Errors**
    - Clear Next.js cache: `rm -rf .next`
    - Reinstall dependencies: `rm -rf node_modules && npm install`
-
-3. **Search Failures**
-   - Check your internet connection
-   - Verify Tavily service status
-   - Review rate limiting settings
 
 ### Getting Help
 
