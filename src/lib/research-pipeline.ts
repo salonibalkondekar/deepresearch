@@ -1,36 +1,65 @@
 import { ResearchMission, ResearchStep, SearchResult, ResearchResults } from './types';
 import { createOpenAISearchClient, rateLimiter } from './openai-search';
+import OpenAISearchClient from './openai-search';
 
 export class ResearchPipeline {
-  private searchClient;
+  private searchClient: OpenAISearchClient | null;
 
   constructor() {
-    this.searchClient = createOpenAISearchClient();
+    try {
+      this.searchClient = createOpenAISearchClient();
+      console.log('OpenAI search client initialized successfully');
+    } catch (error) {
+      console.error('Failed to initialize OpenAI search client:', error);
+      this.searchClient = null;
+    }
   }
 
   /**
    * Break down a research mission into logical steps using LLM
    */
   async planResearchSteps(mission: string): Promise<ResearchStep[]> {
+    console.log('Planning research steps for mission:', mission);
+    
     try {
+      // Check if we can create the OpenAI client first
+      if (!this.searchClient) {
+        throw new Error('OpenAI search client not initialized');
+      }
+      
       // Use LLM to generate dynamic research steps
+      console.log('Attempting to generate steps with LLM...');
       const aiSteps = await this.searchClient.generateResearchSteps(mission);
       
+      if (!aiSteps || aiSteps.length === 0) {
+        throw new Error('LLM returned empty steps array');
+      }
+      
       // Convert AI-generated steps to ResearchStep objects
-      const steps = aiSteps.map(aiStep => this.createStep(
+      const steps = aiSteps.map((aiStep: {
+        title: string;
+        description: string;
+        priority: 'high' | 'medium' | 'low';
+        estimatedDuration: string;
+      }) => this.createStep(
         aiStep.title, 
         aiStep.description, 
         aiStep.priority, 
         aiStep.estimatedDuration
       ));
       
+      console.log(`Successfully generated ${steps.length} dynamic research steps`);
       return steps;
     } catch (error) {
       console.error('Error generating dynamic research steps:', error);
-      console.error('Falling back to predefined steps for mission:', mission);
+      console.error('Error type:', error instanceof Error ? error.constructor.name : typeof error);
+      console.error('Error message:', error instanceof Error ? error.message : String(error));
+      console.log('Falling back to predefined steps for mission:', mission);
       
-      // Fallback to basic steps if LLM fails
-      return this.createFallbackSteps(mission);
+      // Always return fallback steps to ensure the app continues working
+      const fallbackSteps = this.createFallbackSteps(mission);
+      console.log(`Using ${fallbackSteps.length} fallback research steps`);
+      return fallbackSteps;
     }
   }
 
@@ -63,6 +92,10 @@ export class ResearchPipeline {
    */
   async executeStep(step: ResearchStep, context?: string): Promise<ResearchStep> {
     try {
+      if (!this.searchClient) {
+        throw new Error('Search client not initialized');
+      }
+
       step.status = 'executing';
       step.startedAt = new Date();
 
@@ -99,7 +132,8 @@ export class ResearchPipeline {
    */
   async executeResearchPlan(
     mission: ResearchMission,
-    onStepComplete?: (step: ResearchStep, progress: number) => void
+    onStepComplete?: (step: ResearchStep, progress: number) => void,
+    onMissionUpdate?: (mission: ResearchMission) => void
   ): Promise<ResearchMission> {
     let context = mission.description;
 
@@ -136,7 +170,7 @@ export class ResearchPipeline {
     mission.updatedAt = new Date();
 
     // Generate comprehensive summary in background
-    this.generateComprehensiveSummaryAsync(mission);
+    this.generateComprehensiveSummaryAsync(mission, onMissionUpdate);
 
     return mission;
   }
@@ -269,6 +303,10 @@ export class ResearchPipeline {
     }
 
     try {
+      if (!this.searchClient) {
+        throw new Error('Search client not available for comprehensive analysis');
+      }
+
       // Create comprehensive analysis prompt
       const prompt = this.createAnalysisPrompt(mission, allContent);
       
@@ -397,7 +435,7 @@ Do not include a sources section as this will be handled separately.`;
   /**
    * Generate comprehensive summary in background
    */
-  private async generateComprehensiveSummaryAsync(mission: ResearchMission): Promise<void> {
+  private async generateComprehensiveSummaryAsync(mission: ResearchMission, onUpdate?: (mission: ResearchMission) => void): Promise<void> {
     try {
       console.log('Starting comprehensive analysis generation...');
       
@@ -416,8 +454,10 @@ Do not include a sources section as this will be handled separately.`;
       
       console.log('Comprehensive analysis completed');
       
-      // Here you could also trigger a websocket update or similar to notify the frontend
-      // that the comprehensive analysis is ready
+      // Notify callback about the update
+      if (onUpdate) {
+        onUpdate(mission);
+      }
       
     } catch (error) {
       console.error('Error generating comprehensive summary:', error);
@@ -429,6 +469,12 @@ Do not include a sources section as this will be handled separately.`;
           '⚠️ Comprehensive analysis failed to generate. Using basic summary.'
         );
         (mission.results as ResearchResults).isGeneratingComprehensiveAnalysis = false;
+        mission.updatedAt = new Date();
+      }
+
+      // Notify callback about the update even on error
+      if (onUpdate) {
+        onUpdate(mission);
       }
     }
   }

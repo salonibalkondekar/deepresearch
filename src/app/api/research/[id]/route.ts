@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { researchAgent } from '@/lib/agent';
+import { ResearchResults } from '@/lib/types';
 
 export async function GET(
   request: NextRequest,
@@ -19,11 +20,20 @@ export async function GET(
     const mission = researchAgent.getMission(missionId);
 
     if (!mission) {
+      console.log('Mission not found:', missionId);
       return NextResponse.json(
         { error: 'Mission not found' },
         { status: 404 }
       );
     }
+
+    console.log('Retrieved mission:', {
+      id: mission.id,
+      status: mission.status,
+      hasResults: !!mission.results,
+      isGeneratingAnalysis: mission.results ? (mission.results as ResearchResults)?.isGeneratingComprehensiveAnalysis : undefined,
+      lastUpdated: mission.updatedAt
+    });
 
     // Get current agent state for progress
     const agentState = researchAgent.getState();

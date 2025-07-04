@@ -63,13 +63,13 @@ export default function Home() {
 
       if (data.success) {
         setCurrentMission(data.mission);
+        setIsProcessing(false); // Stop processing after plan is created
       } else {
         throw new Error(data.error || 'Failed to create research plan');
       }
     } catch (error) {
       console.error('Failed to create research plan:', error);
       setError(error instanceof Error ? error.message : 'Failed to create research plan');
-    } finally {
       setIsProcessing(false);
     }
   };
@@ -112,6 +112,11 @@ export default function Home() {
     setProgress(0);
     setIsProcessing(false);
     setError(null);
+  };
+
+  const handleMissionUpdate = (updatedMission: ResearchMission) => {
+    console.log('Updating mission with comprehensive analysis:', updatedMission.id);
+    setCurrentMission(updatedMission);
   };
 
   const handleCancelResearch = async () => {
@@ -190,8 +195,8 @@ export default function Home() {
           />
         )}
 
-        {/* Progress Tracker - Show when mission is active (researching) */}
-        {currentMission && (currentMission.status === 'researching' || isProcessing) && currentMission.status !== 'completed' && (
+        {/* Progress Tracker - Show when mission is actively researching */}
+        {currentMission && currentMission.status === 'researching' && (
           <div className="space-y-4">
             <ProgressTracker 
               mission={currentMission}
@@ -217,6 +222,7 @@ export default function Home() {
           <ResearchResults 
             mission={currentMission}
             onStartNew={handleStartNew}
+            onMissionUpdate={handleMissionUpdate}
           />
         )}
       </div>

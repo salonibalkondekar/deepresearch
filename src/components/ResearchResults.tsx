@@ -6,41 +6,62 @@ import { useState, useEffect } from 'react';
 interface ResearchResultsProps {
   mission: ResearchMission;
   onStartNew: () => void;
+  onMissionUpdate?: (updatedMission: ResearchMission) => void;
 }
 
-export default function ResearchResults({ mission, onStartNew }: ResearchResultsProps) {
+export default function ResearchResults({ mission, onStartNew, onMissionUpdate }: ResearchResultsProps) {
   const [activeTab, setActiveTab] = useState<'summary' | 'findings' | 'sources'>('summary');
   const [expandedSources, setExpandedSources] = useState<Set<string>>(new Set());
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [analysisProgress, setAnalysisProgress] = useState<string>('Starting analysis...');
 
   // Poll for comprehensive analysis completion
   useEffect(() => {
     const isGeneratingAnalysis = (mission.results as ResearchResultsType)?.isGeneratingComprehensiveAnalysis;
     
     if (isGeneratingAnalysis) {
+      let pollCount = 0;
+      const progressMessages = [
+        'Starting comprehensive analysis...',
+        'Analyzing research findings...',
+        'Processing key insights...',
+        'Generating recommendations...',
+        'Finalizing comprehensive report...'
+      ];
+
       const pollInterval = setInterval(async () => {
         try {
           setIsRefreshing(true);
+          
+          // Update progress message
+          setAnalysisProgress(progressMessages[Math.min(pollCount, progressMessages.length - 1)]);
+          pollCount++;
+
           const response = await fetch(`/api/research/${mission.id}`);
           const data = await response.json();
           
           if (data.success && data.mission.results) {
             const stillGenerating = (data.mission.results as ResearchResultsType)?.isGeneratingComprehensiveAnalysis;
             if (!stillGenerating) {
-              // Comprehensive analysis is ready, trigger a refresh
-              window.location.reload();
+              // Comprehensive analysis is ready, update the mission state
+              setAnalysisProgress('Analysis complete!');
+              if (onMissionUpdate) {
+                onMissionUpdate(data.mission);
+              }
+              clearInterval(pollInterval);
             }
           }
         } catch (error) {
           console.error('Error polling for analysis completion:', error);
+          setAnalysisProgress('Error during analysis. Retrying...');
         } finally {
           setIsRefreshing(false);
         }
-      }, 3000); // Poll every 3 seconds
+      }, 4000); // Poll every 4 seconds
 
       return () => clearInterval(pollInterval);
     }
-  }, [mission.id, mission.results]);
+  }, [mission.id, mission.results, onMissionUpdate]);
 
   if (!mission.results) {
     return null;
@@ -184,9 +205,9 @@ export default function ResearchResults({ mission, onStartNew }: ResearchResults
                     <div className="flex items-center text-sm text-blue-600">
                       <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      {isRefreshing ? 'Checking for updates...' : 'Generating analysis...'}
+                      {analysisProgress}
                     </div>
                   )}
                 </div>

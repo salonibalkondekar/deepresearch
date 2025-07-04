@@ -211,21 +211,40 @@ Return ONLY the JSON array, no additional text.`;
       });
 
       const response = completion.choices[0]?.message?.content || '';
+      console.log('Raw OpenAI response:', response);
       
-      // Clean the response by removing markdown code blocks if present
+      // Clean the response by removing markdown code blocks and other formatting
       let cleanedResponse = response.trim();
       
       // Remove markdown code blocks (```json...``` or ```...```)
-      if (cleanedResponse.startsWith('```')) {
-        // Find the first newline after ```
-        const firstNewline = cleanedResponse.indexOf('\n');
-        // Find the last ``` 
-        const lastBackticks = cleanedResponse.lastIndexOf('```');
-        
-        if (firstNewline !== -1 && lastBackticks !== -1 && lastBackticks > firstNewline) {
-          cleanedResponse = cleanedResponse.substring(firstNewline + 1, lastBackticks).trim();
+      if (cleanedResponse.includes('```')) {
+        // More robust markdown removal
+        const codeBlockRegex = /```(?:json)?\s*\n?([\s\S]*?)\n?```/;
+        const match = cleanedResponse.match(codeBlockRegex);
+        if (match && match[1]) {
+          cleanedResponse = match[1].trim();
+        } else {
+          // Fallback: remove all ``` occurrences
+          cleanedResponse = cleanedResponse.replace(/```[a-z]*\n?/g, '').replace(/```/g, '').trim();
         }
       }
+      
+      // Remove any leading/trailing text that's not JSON
+      // Look for the first [ or { and last ] or }
+      const firstBracket = Math.min(
+        cleanedResponse.indexOf('[') !== -1 ? cleanedResponse.indexOf('[') : Infinity,
+        cleanedResponse.indexOf('{') !== -1 ? cleanedResponse.indexOf('{') : Infinity
+      );
+      const lastBracket = Math.max(
+        cleanedResponse.lastIndexOf(']'),
+        cleanedResponse.lastIndexOf('}')
+      );
+      
+      if (firstBracket !== Infinity && lastBracket !== -1 && firstBracket <= lastBracket) {
+        cleanedResponse = cleanedResponse.substring(firstBracket, lastBracket + 1);
+      }
+      
+      console.log('Cleaned response:', cleanedResponse);
       
       try {
         // Parse the cleaned JSON response
@@ -299,8 +318,37 @@ export function createOpenAISearchClient(): OpenAISearchClient {
   if (!apiKey) {
     throw new Error('OPENAI_API_KEY environment variable is required');
   }
-
+  
+  // Validate API key format
+  if (!apiKey.startsWith('sk-')) {
+    throw new Error('Invalid OpenAI API key format. API key should start with "sk-"');
+  }
+  
+  console.log('Creating OpenAI client with API key:', apiKey.substring(0, 20) + '...');
   return new OpenAISearchClient(apiKey);
+}
+
+// Test function to validate OpenAI connectivity
+export async function testOpenAIConnectivity(): Promise<boolean> {
+  try {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      return false;
+    }
+    
+    const client = new OpenAI({ apiKey });
+    // Try a simple API call to test connectivity
+    const completion = await client.chat.completions.create({
+      model: "gpt-4o",
+      messages: [{ role: "user", content: "Hello" }],
+      max_tokens: 5
+    });
+    
+    return completion.choices?.[0]?.message?.content != null;
+  } catch (error) {
+    console.error('OpenAI connectivity test failed:', error);
+    return false;
+  }
 }
 
 export default OpenAISearchClient;

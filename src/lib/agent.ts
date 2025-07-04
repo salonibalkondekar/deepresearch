@@ -35,7 +35,8 @@ export class ResearchAgent {
    */
   async startResearch(
     missionId: string,
-    onProgress?: (mission: ResearchMission, progress: number) => void
+    onProgress?: (mission: ResearchMission, progress: number) => void,
+    onMissionUpdate?: (mission: ResearchMission) => void
   ): Promise<ResearchMission> {
     const mission = this.missions.get(missionId);
     if (!mission) {
@@ -78,6 +79,13 @@ export class ResearchAgent {
           
           if (onProgress) {
             onProgress(mission, this.state.progress);
+          }
+        },
+        (updatedMission: ResearchMission) => {
+          // Update mission in storage when comprehensive analysis completes
+          this.missions.set(missionId, updatedMission);
+          if (onMissionUpdate) {
+            onMissionUpdate(updatedMission);
           }
         }
       );
