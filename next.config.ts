@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   output: 'standalone',
   basePath: '/deepresearch',
   assetPrefix: '/deepresearch',
+  trailingSlash: true,
   /* config options here */
 };
 
