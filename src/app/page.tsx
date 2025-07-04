@@ -19,7 +19,7 @@ export default function Home() {
 
     const pollInterval = setInterval(async () => {
       try {
-        const response = await fetch(`/api/research/${currentMission.id}`);
+        const response = await fetch(`api/research/${currentMission.id}`);
         const data = await response.json();
 
         if (data.success) {
@@ -48,7 +48,7 @@ export default function Home() {
       setIsProcessing(true);
       
       // Create mission and generate dynamic steps via API
-      const response = await fetch('/api/research/plan', {
+      const response = await fetch('api/research/plan', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -82,7 +82,7 @@ export default function Home() {
       setError(null);
       setProgress(0);
 
-      const response = await fetch('/api/research', {
+      const response = await fetch('api/research', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -123,7 +123,7 @@ export default function Home() {
     if (!currentMission) return;
 
     try {
-      await fetch(`/api/research/${currentMission.id}`, {
+      await fetch(`api/research/${currentMission.id}`, {
         method: 'DELETE',
       });
       
