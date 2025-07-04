@@ -2,6 +2,8 @@
 
 An intelligent research automation platform powered by AI that can analyze any topic, break it down into research steps, and compile comprehensive findings.
 
+![AI Research Agent UI](public/images/ai-research-agent-ui.png)
+
 ## ✨ Features
 
 - **Intelligent Mission Planning**: Automatically breaks down research tasks into logical steps
