@@ -221,9 +221,9 @@ export default function ResearchPlan({
             <h2 className="text-lg font-semibold text-gray-900">Research Steps</h2>
             <button
               onClick={handleAddStep}
-              className="flex items-center bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm"
+              className="flex items-center bg-green-600 text-white px-2.5 py-1.5 rounded-md hover:bg-green-700 transition-colors text-sm"
             >
-              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
               Add Step
@@ -296,7 +296,7 @@ export default function ResearchPlan({
           <button
             onClick={onExecute}
             disabled={isExecuting || !canExecute}
-            className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:from-purple-700 hover:to-purple-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isExecuting ? (
               <div className="flex items-center">
