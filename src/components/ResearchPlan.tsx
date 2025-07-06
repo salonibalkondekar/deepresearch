@@ -206,12 +206,6 @@ export default function ResearchPlan({
         <div className="mb-6">
           <div className="flex justify-between items-start">
             <h1 className="text-2xl font-bold text-gray-900 mb-2">{mission.title}</h1>
-            <button
-              onClick={onStartNew}
-              className="text-sm text-gray-600 hover:text-gray-800 transition-all duration-200 px-3 py-1.5 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-gray-300"
-            >
-              Start New
-            </button>
           </div>
           <div className="prose prose-sm max-w-none text-gray-600 mb-4">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
