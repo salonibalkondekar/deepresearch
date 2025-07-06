@@ -28,7 +28,6 @@ import remarkGfm from 'remark-gfm';
 interface ResearchPlanProps {
   mission: ResearchMission;
   onExecute: () => void;
-  onStartNew: () => void;
   onStepsChange?: (steps: ResearchStep[]) => void;
   isExecuting: boolean;
 }
@@ -36,7 +35,6 @@ interface ResearchPlanProps {
 export default function ResearchPlan({ 
   mission, 
   onExecute, 
-  onStartNew, 
   onStepsChange,
   isExecuting 
 }: ResearchPlanProps) {

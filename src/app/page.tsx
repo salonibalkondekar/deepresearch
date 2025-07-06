@@ -202,7 +202,6 @@ export default function Home() {
           <ResearchPlan 
             mission={currentMission}
             onExecute={handleExecuteResearch}
-            onStartNew={handleStartNew}
             onStepsChange={handleStepsChange}
             isExecuting={isProcessing}
           />
