@@ -203,22 +203,20 @@ export default function ResearchPlan({
     <div className="w-full max-w-4xl mx-auto">
       <div className="bg-white rounded-lg shadow-lg p-6 md:p-8">
         {/* Header */}
-        <div className="flex justify-between items-start mb-6">
-          <div>
+        <div className="mb-6">
+          <div className="flex justify-between items-start">
             <h1 className="text-2xl font-bold text-gray-900 mb-2">{mission.title}</h1>
-            <div className="prose prose-sm max-w-none text-gray-600 mb-4">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {mission.description}
-              </ReactMarkdown>
-            </div>
-          </div>
-          <div>
             <button
               onClick={onStartNew}
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+              className="text-sm text-gray-600 hover:text-gray-800 transition-all duration-200 px-3 py-1.5 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-gray-300"
             >
-              New Research Mission
+              Start New
             </button>
+          </div>
+          <div className="prose prose-sm max-w-none text-gray-600 mb-4">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {mission.description}
+            </ReactMarkdown>
           </div>
         </div>
 
