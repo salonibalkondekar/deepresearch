@@ -40,12 +40,11 @@ export class ResearchPipeline {
         title: string;
         description: string;
         priority: 'high' | 'medium' | 'low';
-        estimatedDuration: string;
-      }) => this.createStep(
+      }, index: number) => this.createStep(
         aiStep.title, 
         aiStep.description, 
-        aiStep.priority, 
-        aiStep.estimatedDuration
+        aiStep.priority,
+        index
       ));
       
       console.log(`Successfully generated ${steps.length} dynamic research steps`);
@@ -68,22 +67,22 @@ export class ResearchPipeline {
    */
   private createFallbackSteps(mission: string): ResearchStep[] {
     return [
-      this.createStep('Foundation Research', `Research basic information and overview of ${mission}`, 'high', '1-2 hours'),
-      this.createStep('Detailed Analysis', `Conduct detailed analysis of key aspects`, 'high', '2-3 hours'),
-      this.createStep('Current Status', `Research current status and recent developments`, 'medium', '1 hour'),
-      this.createStep('Expert Insights', `Gather expert opinions and insights`, 'medium', '1-2 hours'),
-      this.createStep('Summary & Validation', `Validate findings and create summary`, 'high', '30 minutes')
+      this.createStep('Foundation Research', `Research basic information and overview of ${mission}`, 'high', 0),
+      this.createStep('Detailed Analysis', `Conduct detailed analysis of key aspects`, 'high', 1),
+      this.createStep('Current Status', `Research current status and recent developments`, 'medium', 2),
+      this.createStep('Expert Insights', `Gather expert opinions and insights`, 'medium', 3),
+      this.createStep('Summary & Validation', `Validate findings and create summary`, 'high', 4)
     ];
   }
 
-  private createStep(title: string, description: string, priority?: 'high' | 'medium' | 'low', estimatedDuration?: string): ResearchStep {
+  private createStep(title: string, description: string, priority?: 'high' | 'medium' | 'low', order: number = 0): ResearchStep {
     return {
       id: this.generateId(),
       title,
       description,
       status: 'pending',
       priority,
-      estimatedDuration,
+      order,
     };
   }
 

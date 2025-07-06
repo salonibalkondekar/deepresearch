@@ -1,15 +1,165 @@
 'use client';
 
-import { ResearchMission } from '@/lib/types';
+import { ResearchMission, ResearchStep } from '@/lib/types';
+import { useState, useEffect, useRef } from 'react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import {
+  restrictToVerticalAxis,
+  restrictToWindowEdges,
+} from '@dnd-kit/modifiers';
+import SortableStepItem from './SortableStepItem';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface ResearchPlanProps {
   mission: ResearchMission;
   onExecute: () => void;
   onStartNew: () => void;
+  onStepsChange?: (steps: ResearchStep[]) => void;
   isExecuting: boolean;
 }
 
-export default function ResearchPlan({ mission, onExecute, onStartNew, isExecuting }: ResearchPlanProps) {
+export default function ResearchPlan({ 
+  mission, 
+  onExecute, 
+  onStartNew, 
+  onStepsChange,
+  isExecuting 
+}: ResearchPlanProps) {
+  const [steps, setSteps] = useState<ResearchStep[]>(
+    mission.steps.map((step, index) => ({
+      ...step,
+      order: step.order ?? index
+    })).sort((a, b) => a.order - b.order)
+  );
+  const stepsRef = useRef<ResearchStep[]>(steps);
+  const [editingStep, setEditingStep] = useState<string | null>(null);
+
+  // Use effect to notify parent when steps change, avoiding setState during render
+  useEffect(() => {
+    stepsRef.current = steps;
+    if (onStepsChange) {
+      onStepsChange(steps);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [steps]); // Intentionally excluding onStepsChange to prevent infinite loop
+  const [tempStepData, setTempStepData] = useState<{
+    title: string;
+    description: string;
+    priority: 'high' | 'medium' | 'low';
+  }>({
+    title: '',
+    description: '',
+    priority: 'medium'
+  });
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (active.id !== over?.id) {
+      setSteps((items) => {
+        const oldIndex = items.findIndex((item) => item.id === active.id);
+        const newIndex = items.findIndex((item) => item.id === over?.id);
+        
+        const newItems = arrayMove(items, oldIndex, newIndex);
+        // Update order values
+        const updatedItems = newItems.map((item, index) => ({
+          ...item,
+          order: index
+        }));
+        
+        return updatedItems;
+      });
+    }
+  };
+
+  const handleEditStep = (stepId: string) => {
+    const step = steps.find(s => s.id === stepId);
+    if (step) {
+      setTempStepData({
+        title: step.title,
+        description: step.description,
+        priority: step.priority || 'medium'
+      });
+      setEditingStep(stepId);
+    }
+  };
+
+  const handleSaveStep = (stepId: string) => {
+    const updatedSteps = steps.map(step => 
+      step.id === stepId 
+        ? {
+            ...step,
+            title: tempStepData.title,
+            description: tempStepData.description,
+            priority: tempStepData.priority
+          }
+        : step
+    );
+    setSteps(updatedSteps);
+    setEditingStep(null);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingStep(null);
+    setTempStepData({
+      title: '',
+      description: '',
+      priority: 'medium'
+    });
+  };
+
+  const handleDeleteStep = (stepId: string) => {
+    const updatedSteps = steps
+      .filter(step => step.id !== stepId)
+      .map((step, index) => ({
+        ...step,
+        order: index
+      }));
+    setSteps(updatedSteps);
+  };
+
+  const handleAddStep = () => {
+    const newStep: ResearchStep = {
+      id: `step-${Date.now()}`,
+      title: 'New Research Step',
+      description: 'Describe what needs to be researched in this step',
+      status: 'pending',
+      priority: 'medium',
+      order: steps.length
+    };
+    
+    const updatedSteps = [...steps, newStep];
+    setSteps(updatedSteps);
+    
+    // Automatically edit the new step
+    setTimeout(() => {
+      handleEditStep(newStep.id);
+    }, 100);
+  };
+
+
   const getPriorityColor = (priority: string) => {
     switch (priority?.toUpperCase()) {
       case 'HIGH':
@@ -25,10 +175,8 @@ export default function ResearchPlan({ mission, onExecute, onStartNew, isExecuti
 
   const formatDate = (date: Date | string) => {
     try {
-      // Convert string to Date if needed
       const dateObj = date instanceof Date ? date : new Date(date);
       
-      // Check if date is valid
       if (isNaN(dateObj.getTime())) {
         return 'Invalid date';
       }
@@ -47,6 +195,10 @@ export default function ResearchPlan({ mission, onExecute, onStartNew, isExecuti
     }
   };
 
+  const canExecute = steps.length > 0 && steps.every(step => 
+    step.title.trim() !== '' && step.description.trim() !== ''
+  );
+
   return (
     <div className="w-full max-w-4xl mx-auto">
       <div className="bg-white rounded-lg shadow-lg p-6 md:p-8">
@@ -54,64 +206,104 @@ export default function ResearchPlan({ mission, onExecute, onStartNew, isExecuti
         <div className="flex justify-between items-start mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">{mission.title}</h1>
-            <p className="text-gray-600">{mission.description}</p>
+            <div className="prose prose-sm max-w-none text-gray-600 mb-4">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {mission.description}
+              </ReactMarkdown>
+            </div>
           </div>
-          <button
-            onClick={onStartNew}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            New Research Mission
-          </button>
+          <div>
+            <button
+              onClick={onStartNew}
+              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              New Research Mission
+            </button>
+          </div>
         </div>
 
+
         {/* Research Steps */}
-        <div className="space-y-4 mb-8">
-          {mission.steps.map((step, index) => (
-            <div key={step.id} className="border border-gray-200 rounded-lg p-4">
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center">
-                  <span className="flex-shrink-0 w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-medium mr-3">
-                    {index + 1}
-                  </span>
-                  <h3 className="text-lg font-semibold text-gray-900">{step.title}</h3>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(step.priority || 'medium')}`}>
-                    {(step.priority || 'medium').toUpperCase()}
-                  </span>
-                  <span className="text-sm text-gray-500">{step.estimatedDuration || 'Variable'}</span>
-                </div>
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Research Steps</h2>
+            <button
+              onClick={handleAddStep}
+              className="flex items-center bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm"
+            >
+              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Add Step
+            </button>
+          </div>
+
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+            modifiers={[restrictToVerticalAxis, restrictToWindowEdges]}
+          >
+            <SortableContext items={steps.map(step => step.id)} strategy={verticalListSortingStrategy}>
+              <div 
+                className="space-y-4"
+                role="list"
+                aria-label="Research steps"
+                aria-describedby="edit-help"
+              >
+                {steps.map((step, index) => (
+                  <SortableStepItem
+                    key={step.id}
+                    step={step}
+                    index={index}
+                    isEditing={editingStep === step.id}
+                    tempData={editingStep === step.id ? tempStepData : null}
+                    onEdit={() => handleEditStep(step.id)}
+                    onSave={() => handleSaveStep(step.id)}
+                    onCancel={handleCancelEdit}
+                    onDelete={() => handleDeleteStep(step.id)}
+                    onTempDataChange={setTempStepData}
+                    getPriorityColor={getPriorityColor}
+                  />
+                ))}
               </div>
-              
-              <div className="ml-11">
-                <div className="mb-3">
-                  <h4 className="text-sm font-medium text-gray-700 mb-1">Description</h4>
-                  <p className="text-sm text-gray-600">{step.description}</p>
-                </div>
-                
-                <div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-1">Expected Outcome</h4>
-                  <p className="text-sm text-gray-600">
-                    Comprehensive information and analysis related to this research step.
-                  </p>
-                </div>
-              </div>
-            </div>
-          ))}
+            </SortableContext>
+          </DndContext>
+          
+          {/* Hidden accessibility help text */}
+          <div id="edit-help" className="sr-only">
+            You can drag and drop to reorder steps, click to edit content, and use keyboard navigation.
+          </div>
         </div>
+
+        {/* Validation Warning */}
+        {!canExecute && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 text-red-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+              <span className="text-red-700 font-medium">Cannot Execute</span>
+            </div>
+            <p className="text-red-600 text-sm mt-1">
+              Please ensure all steps have both a title and description before executing.
+            </p>
+          </div>
+        )}
 
         {/* Plan Generation Info */}
         <div className="border-t pt-4 mb-8">
-          <p className="text-sm text-gray-500">
-            Plan generated on {formatDate(mission.createdAt)}
-          </p>
+          <div className="flex items-center justify-between text-sm text-gray-500">
+            <span>Plan generated on {formatDate(mission.createdAt)}</span>
+            <span>{steps.length} step{steps.length !== 1 ? 's' : ''} total</span>
+          </div>
         </div>
 
         {/* Execute Button */}
         <div className="text-center">
           <button
             onClick={onExecute}
-            disabled={isExecuting}
+            disabled={isExecuting || !canExecute}
             className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:from-purple-700 hover:to-purple-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isExecuting ? (

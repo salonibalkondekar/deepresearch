@@ -17,6 +17,7 @@ export interface ResearchStep {
   status: 'pending' | 'executing' | 'completed' | 'error';
   priority?: 'high' | 'medium' | 'low';
   estimatedDuration?: string;
+  order: number;
   results?: SearchResult[];
   error?: string;
   startedAt?: Date;

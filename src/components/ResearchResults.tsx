@@ -2,6 +2,11 @@
 
 import { ResearchMission, ResearchResults as ResearchResultsType } from '@/lib/types';
 import { useState, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import type { Components } from 'react-markdown';
 
 interface ResearchResultsProps {
   mission: ResearchMission;
@@ -110,21 +115,77 @@ export default function ResearchResults({ mission, onStartNew, onMissionUpdate }
     return Math.round((results.completedSteps / results.totalSteps) * 100);
   };
 
-  const formatMarkdownToHtml = (text: string) => {
-    return text
-      // Headers
-      .replace(/^## (.*$)/gm, '<h2 class="text-xl font-semibold text-gray-900 mt-6 mb-3">$1</h2>')
-      .replace(/^### (.*$)/gm, '<h3 class="text-lg font-semibold text-gray-800 mt-4 mb-2">$1</h3>')
-      // Bold text
-      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold">$1</strong>')
-      // Lists
-      .replace(/^- (.*$)/gm, '<li class="ml-4 mb-1">• $1</li>')
-      // Paragraphs
-      .replace(/\n\n/g, '</p><p class="mb-4">')
-      .replace(/^/, '<p class="mb-4">')
-      .replace(/$/, '</p>')
-      // Clean up empty paragraphs
-      .replace(/<p class="mb-4"><\/p>/g, '');
+  const markdownComponents: Components = {
+    h2: ({ ...props }) => (
+      <h2 className="text-xl font-semibold text-gray-900 mt-6 mb-3" {...props} />
+    ),
+    h3: ({ ...props }) => (
+      <h3 className="text-lg font-semibold text-gray-800 mt-4 mb-2" {...props} />
+    ),
+    h4: ({ ...props }) => (
+      <h4 className="text-base font-semibold text-gray-800 mt-3 mb-2" {...props} />
+    ),
+    p: ({ ...props }) => (
+      <p className="mb-4 text-gray-700 leading-relaxed" {...props} />
+    ),
+    ul: ({ ...props }) => (
+      <ul className="mb-4 space-y-1" {...props} />
+    ),
+    ol: ({ ...props }) => (
+      <ol className="mb-4 space-y-1 list-decimal list-inside" {...props} />
+    ),
+    li: ({ ...props }) => (
+      <li className="ml-4 text-gray-700" {...props} />
+    ),
+    strong: ({ ...props }) => (
+      <strong className="font-semibold text-gray-900" {...props} />
+    ),
+    em: ({ ...props }) => (
+      <em className="italic text-gray-700" {...props} />
+    ),
+    blockquote: ({ ...props }) => (
+      <blockquote className="border-l-4 border-blue-500 pl-4 my-4 italic text-gray-600" {...props} />
+    ),
+    code: (props) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { inline, className, children, ...rest } = props as any;
+      const match = /language-(\w+)/.exec(className || '');
+      return !inline && match ? (
+        <SyntaxHighlighter
+          style={tomorrow}
+          language={match[1]}
+          PreTag="div"
+          className="rounded-md my-4"
+          {...rest}
+        >
+          {String(children).replace(/\n$/, '')}
+        </SyntaxHighlighter>
+      ) : (
+        <code className="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono text-gray-800" {...rest}>
+          {children}
+        </code>
+      );
+    },
+    table: ({ ...props }) => (
+      <div className="overflow-x-auto my-4">
+        <table className="min-w-full divide-y divide-gray-200" {...props} />
+      </div>
+    ),
+    thead: ({ ...props }) => (
+      <thead className="bg-gray-50" {...props} />
+    ),
+    tbody: ({ ...props }) => (
+      <tbody className="bg-white divide-y divide-gray-200" {...props} />
+    ),
+    th: ({ ...props }) => (
+      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" {...props} />
+    ),
+    td: ({ ...props }) => (
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900" {...props} />
+    ),
+    a: ({ ...props }) => (
+      <a className="text-blue-600 hover:text-blue-800 underline" target="_blank" rel="noopener noreferrer" {...props} />
+    ),
   };
 
   return (
@@ -212,12 +273,14 @@ export default function ResearchResults({ mission, onStartNew, onMissionUpdate }
                   )}
                 </div>
                 <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  <div 
-                    className="prose prose-gray max-w-none text-gray-700 leading-relaxed"
-                    dangerouslySetInnerHTML={{
-                      __html: formatMarkdownToHtml(results.summary)
-                    }}
-                  />
+                  <div className="prose prose-gray max-w-none">
+                    <ReactMarkdown 
+                      remarkPlugins={[remarkGfm]}
+                      components={markdownComponents}
+                    >
+                      {results.summary}
+                    </ReactMarkdown>
+                  </div>
                 </div>
               </div>
 

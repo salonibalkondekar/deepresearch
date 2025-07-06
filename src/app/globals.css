@@ -41,3 +41,20 @@ input:focus, textarea:focus {
 textarea {
   font-family: 'Geist', Arial, Helvetica, sans-serif !important;
 }
+
+/* Touch target accessibility */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Mobile touch improvements */
+@media (max-width: 768px) {
+  .touch-target {
+    min-height: 48px;
+    min-width: 48px;
+  }
+}

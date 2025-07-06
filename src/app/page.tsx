@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import ResearchForm from '@/components/ResearchForm';
 import ResearchPlan from '@/components/ResearchPlan';
 import ProgressTracker from '@/components/ProgressTracker';
 import ResearchResults from '@/components/ResearchResults';
-import { ResearchMission } from '@/lib/types';
+import { ResearchMission, ResearchStep } from '@/lib/types';
 
 export default function Home() {
   const [currentMission, setCurrentMission] = useState<ResearchMission | null>(null);
@@ -89,7 +89,8 @@ export default function Home() {
         },
         body: JSON.stringify({ 
           title: currentMission.title, 
-          description: currentMission.description 
+          description: currentMission.description,
+          steps: currentMission.steps // Include modified steps
         }),
       });
 
@@ -118,6 +119,17 @@ export default function Home() {
     console.log('Updating mission with comprehensive analysis:', updatedMission.id);
     setCurrentMission(updatedMission);
   };
+
+  const handleStepsChange = useCallback((updatedSteps: ResearchStep[]) => {
+    if (currentMission) {
+      const updatedMission = {
+        ...currentMission,
+        steps: updatedSteps,
+        updatedAt: new Date()
+      };
+      setCurrentMission(updatedMission);
+    }
+  }, [currentMission]);
 
   const handleCancelResearch = async () => {
     if (!currentMission) return;
@@ -191,6 +203,7 @@ export default function Home() {
             mission={currentMission}
             onExecute={handleExecuteResearch}
             onStartNew={handleStartNew}
+            onStepsChange={handleStepsChange}
             isExecuting={isProcessing}
           />
         )}
