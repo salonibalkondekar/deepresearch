@@ -82,15 +82,13 @@ export default function Home() {
       setError(null);
       setProgress(0);
 
-      const response = await fetch('/deepresearch/api/research', {
+      const response = await fetch(`/deepresearch/api/research/${currentMission.id}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          title: currentMission.title, 
-          description: currentMission.description,
-          steps: currentMission.steps // Include modified steps
+          researchPlan: currentMission.steps 
         }),
       });
 

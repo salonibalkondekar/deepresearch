@@ -42,7 +42,7 @@ export default function ResearchResults({ mission, onStartNew, onMissionUpdate }
           setAnalysisProgress(progressMessages[Math.min(pollCount, progressMessages.length - 1)]);
           pollCount++;
 
-          const response = await fetch(`api/research/${mission.id}`);
+          const response = await fetch(`/deepresearch/api/research/${mission.id}`);
           const data = await response.json();
           
           if (data.success && data.mission.results) {

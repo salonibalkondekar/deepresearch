@@ -107,3 +107,61 @@ export async function DELETE(
     );
   }
 }
+
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id: missionId } = await params;
+    const { researchPlan } = await request.json();
+
+    if (!missionId) {
+      return NextResponse.json(
+        { success: false, error: 'Mission ID is required' },
+        { status: 400 }
+      );
+    }
+    
+    if (!researchPlan || !Array.isArray(researchPlan)) {
+      return NextResponse.json(
+        { success: false, error: 'Valid research plan is required' },
+        { status: 400 }
+      );
+    }
+
+    const mission = researchAgent.getMission(missionId);
+    if (!mission) {
+      return NextResponse.json(
+        { success: false, error: 'Mission not found' },
+        { status: 404 }
+      );
+    }
+
+    // This is the critical step: update the mission with the user's edited plan
+    console.log(`Updating mission ${missionId} with new research plan:`, researchPlan);
+    mission.steps = researchPlan;
+    mission.status = 'researching';
+    mission.updatedAt = new Date();
+    
+    // Start the research with the updated plan
+    researchAgent.startResearch(mission);
+
+    return NextResponse.json({
+      success: true,
+      message: 'Research started successfully with the updated plan',
+      mission,
+    });
+
+  } catch (error) {
+    console.error('Mission POST API error:', error);
+    return NextResponse.json(
+      { 
+        success: false, 
+        error: 'Failed to start research with the updated plan',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
+      { status: 500 }
+    );
+  }
+}
