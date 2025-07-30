@@ -145,7 +145,7 @@ export async function POST(
     mission.updatedAt = new Date();
     
     // Start the research with the updated plan
-    researchAgent.startResearch(mission);
+    researchAgent.startResearch(mission.id);
 
     return NextResponse.json({
       success: true,
